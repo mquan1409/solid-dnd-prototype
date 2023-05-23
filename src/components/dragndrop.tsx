@@ -6,7 +6,8 @@ import {
     createDraggable,
     createDroppable,
 } from '@thisbeyond/solid-dnd'
-import { Component, createSignal, JSXElement, Show } from 'solid-js'
+import { Component, createSignal, JSXElement, Show} from 'solid-js'
+import { createStore } from 'solid-js/store'
 
 declare module 'solid-js' {
     namespace JSX {
@@ -42,6 +43,13 @@ const Droppable: Component<{ children: string | JSXElement | JSXElement[] }> = (
 }
 export const DragAndDrop: Component = () => {
     const [where, setWhere] = createSignal('outside')
+    const [items, setItems] = createStore({
+        list: [
+            {id: 0, outside: true},
+            {id: 1, outside: true},
+        ]
+        }
+    )
     const dragEnd: DragEventHandler = ({ droppable }) => {
         if (droppable) {
             setWhere('inside')
@@ -53,7 +61,7 @@ export const DragAndDrop: Component = () => {
         <DragDropProvider onDragEnd={dragEnd}>
             <DragDropSensors />
             <div class="min-h-15">
-                <Show when={where() === 'outside'}>
+                <Show when={}>
                     <Draggable />
                 </Show>
             </div>
