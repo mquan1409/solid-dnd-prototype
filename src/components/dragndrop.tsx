@@ -3,6 +3,7 @@ import {
     DragDropSensors,
     DragEventHandler,
     useDragDropContext,
+    DragOverlay,
     createDraggable,
     createDroppable,
 } from '@thisbeyond/solid-dnd'
@@ -16,27 +17,26 @@ declare module 'solid-js' {
             droppable: boolean
         }
     }
-}
-
-const Draggable: Component = () => {
-    const draggable = createDraggable(1)
+} 
+const Draggable: Component<{id: number }> = (props) => {
+    const draggable = createDraggable(props.id)
     return (
-        <div use:draggable class="draggable">
+        <div use:draggable class="draggable" classList={{"opacity-25": draggable.isActiveDraggable}}>
             Draggable
         </div>
     )
 }
-const Droppable: Component<{ children: string | JSXElement | JSXElement[] }> = (
+const Droppable: Component<{ children: string | JSXElement | JSXElement[], id: number }> = (
     props
 ) => {
-    const droppable = createDroppable(1)
+    const droppable = createDroppable(props.id)
     return (
         <div
             use:droppable
             class="droppable"
+            style={{'height': '50%','width':'50%','border':'1px solid blue'}}
             classList={{ '!droppable-accept': droppable.isActiveDroppable }}
         >
-            Droppable
             {props.children}
         </div>
     )
@@ -61,15 +61,23 @@ export const DragAndDrop: Component = () => {
         <DragDropProvider onDragEnd={dragEnd}>
             <DragDropSensors />
             <div class="min-h-15">
-                <Show when={}>
-                    <Draggable />
+                <Show when={where() === 'outside'}>
+                    <Draggable id={1} />
                 </Show>
             </div>
-            <Droppable>
-                <Show when={where() === 'inside'}>
-                    <Draggable />
+            <div class="min-h-15">
+                <Show when={where() === 'outside'}>
+                    <Draggable id={2}/>
                 </Show>
-            </Droppable>
+            </div>
+            <div style={{'height':'100vh','width':'100vw','display':'flex','justify-content':'center','align-items':'center','border':'1px dashed red'}}>
+                <Droppable id={1}>
+                    <Show when={where() === 'inside'}>
+                        <Draggable id={1}/>
+                        <Draggable id={2}/>
+                    </Show>
+                </Droppable>
+            </div>
         </DragDropProvider>
     )
 }
