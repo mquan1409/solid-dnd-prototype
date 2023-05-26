@@ -3,18 +3,17 @@ import {
     DragDropSensors,
     DragEventHandler,
     useDragDropContext,
-    DragOverlay,
     createDraggable,
     createDroppable,
 } from '@thisbeyond/solid-dnd'
-import { fail } from 'assert'
+import { pbkdf2 } from 'crypto'
 import {
     Component,
     createSignal,
     For,
     JSXElement,
     onMount,
-    Show,
+    batch,
 } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
@@ -26,74 +25,75 @@ declare module 'solid-js' {
         }
     }
 }
+
 const Draggable: Component<{ id: number }> = (props) => {
     const draggable = createDraggable(props.id)
     return (
-        <div
-            use:draggable
-            class="draggable"
-            classList={{ 'opacity-25': draggable.isActiveDraggable }}
-        >
+        <div use:draggable class="draggable">
             Draggable {props.id}
         </div>
     )
 }
-const Droppable: Component<{
-    id: number
+
+const Column: Component<{
+    id: string
+    items: number[]
 }> = (props) => {
     const droppable = createDroppable(props.id)
     return (
         <div
             use:droppable
             class="droppable"
-            style={{ height: '50%', width: '50%', border: '1px solid blue' }}
-            classList={{ '!droppable-accept': droppable.isActiveDroppable }}
+            style={{ height: '30vh', width: '30vh', border: '1px solid blue' }}
         >
-            Droppable
+            Droppable {props.id}
+            <For each={props.items}>{(item) => <Draggable id={item} />}</For>
         </div>
     )
 }
-export const DragAndDrop: Component = () => {
-    var count = 2
-    let ref: HTMLDivElement
-    onMount(() => {
-        console.log(ref)
+
+export const MultiContainer: Component = () => {
+    let count = 3
+    const [columns, setColumns] = createStore<Record<string, number[]>>({
+        A: [0, 1],
+        B: [2],
     })
-    const [where, setWhere] = createSignal('outside')
-    const [items, setItems] = createStore({
-        list: [
-            { id: 0, outside: true },
-            { id: 1, outside: true },
-        ],
-    })
+    const findContainer = (id: number): string | 'X' => {
+        for (const [key, values] of Object.entries(columns)) {
+            if (values.includes(id)) {
+                return key
+            }
+        }
+        return 'X'
+    }
     const dragEnd: DragEventHandler = ({ draggable, droppable }) => {
-        console.log(ref)
         if (droppable) {
-            droppable.node.append(draggable.node)
+            const startContainer = findContainer(draggable.id as number)
+            const stopContainer = droppable.id as string
+            batch(() => {
+                setColumns(startContainer, (items) =>
+                    items.filter((item) => item !== (draggable.id as number))
+                )
+                setColumns(stopContainer, (items) => [
+                    ...items,
+                    draggable.id as number,
+                ])
+            })
         } else {
-            ref.append(draggable.node)
         }
     }
+    const containers = () => Object.entries(columns)
     return (
         <>
             <button
                 onClick={(e) => {
-                    setItems('list', (l) => [
-                        ...l,
-                        { id: count++, outside: true },
-                    ])
-                    console.log(ref)
+                    setColumns('A', (items) => [...items, count++])
                 }}
             >
                 Add Item
             </button>
             <DragDropProvider onDragEnd={dragEnd}>
                 <DragDropSensors />
-                <div ref={ref!}>
-                    <For each={items.list}>
-                        {(item, i) => <Draggable id={item.id} />}
-                    </For>
-                </div>
                 <div
                     style={{
                         height: '100vh',
@@ -104,7 +104,11 @@ export const DragAndDrop: Component = () => {
                         border: '1px dashed red',
                     }}
                 >
-                    <Droppable id={0}></Droppable>
+                    <For each={containers()}>
+                        {(container) => (
+                            <Column id={container[0]} items={container[1]} />
+                        )}
+                    </For>
                 </div>
             </DragDropProvider>
         </>
