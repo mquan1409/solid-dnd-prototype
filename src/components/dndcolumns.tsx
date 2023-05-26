@@ -47,7 +47,12 @@ const Column: Component<{
             style={{ height: '30vh', width: '30vh', border: '1px solid blue' }}
         >
             Droppable {props.id}
-            <For each={props.items}>{(item) => <Draggable id={item} />}</For>
+            <For each={props.items}>
+                {(item) => {
+                    console.log(item)
+                    return <Draggable id={item} />
+                }}
+            </For>
         </div>
     )
 }
@@ -83,6 +88,7 @@ export const MultiContainer: Component = () => {
         }
     }
     const containers = () => Object.entries(columns)
+    const containerIds = () => Object.keys(columns)
     return (
         <>
             <button
@@ -104,10 +110,11 @@ export const MultiContainer: Component = () => {
                         border: '1px dashed red',
                     }}
                 >
-                    <For each={containers()}>
-                        {(container) => (
-                            <Column id={container[0]} items={container[1]} />
-                        )}
+                    <For each={containerIds()}>
+                        {(id) => {
+                            console.log(id)
+                            return <Column id={id} items={columns[id]} />
+                        }}
                     </For>
                 </div>
             </DragDropProvider>
