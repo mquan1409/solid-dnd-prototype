@@ -26,6 +26,12 @@ declare module 'solid-js' {
     }
 }
 
+type Column = {
+    id: string
+    name: string
+    list: number[]
+}
+
 const Draggable: Component<{ id: number }> = (props) => {
     const draggable = createDraggable(props.id)
     return (
@@ -59,27 +65,43 @@ const Column: Component<{
 
 export const MultiContainer: Component = () => {
     let count = 3
-    const [columns, setColumns] = createStore<Record<string, number[]>>({
-        A: [0, 1],
-        B: [2],
+    const [columns, setColumns] = createStore<{ num: number; cols: Column[] }>({
+        num: 2,
+        cols: [
+            { id: 'A', name: 'A', list: [0, 1] },
+            { id: 'B', name: 'B', list: [2] },
+        ],
     })
-    const findContainer = (id: number): string | 'X' => {
-        for (const [key, values] of Object.entries(columns)) {
-            if (values.includes(id)) {
-                return key
+    const findContainerIndex = (id: number): number | -1 => {
+        for (const [index, column] of columns.cols.entries()) {
+            if (column.list.includes(id)) {
+                return index
             }
         }
-        return 'X'
+        return -1
+    }
+
+    const convertContainerIDtoIndex = (id: string): number | -1 => {
+        for (const [index, column] of columns.cols.entries()) {
+            if (column.id == id) {
+                return index
+            }
+        }
+        return -1
     }
     const dragEnd: DragEventHandler = ({ draggable, droppable }) => {
         if (droppable) {
-            const startContainer = findContainer(draggable.id as number)
-            const stopContainer = droppable.id as string
+            const startContainerIndex = findContainerIndex(
+                draggable.id as number
+            )
+            const stopContainerIndex = convertContainerIDtoIndex(
+                droppable.id as string
+            )
             batch(() => {
-                setColumns(startContainer, (items) =>
+                setColumns('cols', startContainerIndex, 'list', (items) =>
                     items.filter((item) => item !== (draggable.id as number))
                 )
-                setColumns(stopContainer, (items) => [
+                setColumns('cols', stopContainerIndex, 'list', (items) => [
                     ...items,
                     draggable.id as number,
                 ])
@@ -88,15 +110,42 @@ export const MultiContainer: Component = () => {
         }
     }
     const containers = () => Object.entries(columns)
-    const containerIds = () => Object.keys(columns)
+    const containerIndexes = (): number[] => {
+        console.log('calc indexes')
+        const indexes: number[] = []
+        for (let i = 0; i < columns.num; i++) {
+            indexes.push(i)
+        }
+        return indexes
+    }
     return (
         <>
             <button
                 onClick={(e) => {
-                    setColumns('A', (items) => [...items, count++])
+                    setColumns('cols', 0, 'list', (items) => [
+                        ...items,
+                        count++,
+                    ])
                 }}
             >
                 Add Item
+            </button>
+            <button
+                onClick={(e) => {
+                    batch(() => {
+                        setColumns('num', (num) => num + 1)
+                        setColumns('cols', (cols) => [
+                            ...cols,
+                            {
+                                id: String.fromCharCode(64 + columns.num),
+                                name: String.fromCharCode(64 + columns.num),
+                                list: [],
+                            },
+                        ])
+                    })
+                }}
+            >
+                Add Column
             </button>
             <DragDropProvider onDragEnd={dragEnd}>
                 <DragDropSensors />
@@ -110,10 +159,15 @@ export const MultiContainer: Component = () => {
                         border: '1px dashed red',
                     }}
                 >
-                    <For each={containerIds()}>
-                        {(id) => {
-                            console.log(id)
-                            return <Column id={id} items={columns[id]} />
+                    <For each={containerIndexes()}>
+                        {(index) => {
+                            console.log('col' + index.toString())
+                            return (
+                                <Column
+                                    id={columns.cols[index].id}
+                                    items={columns.cols[index].list}
+                                />
+                            )
                         }}
                     </For>
                 </div>
