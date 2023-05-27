@@ -5,6 +5,7 @@ import {
     useDragDropContext,
     createDraggable,
     createDroppable,
+    DragOverlay,
 } from '@thisbeyond/solid-dnd'
 import { pbkdf2 } from 'crypto'
 import {
@@ -26,16 +27,32 @@ declare module 'solid-js' {
     }
 }
 
+type Item = {
+    id: number
+    top: number
+    left: number
+}
+
 type Column = {
     id: string
     name: string
-    list: number[]
+    list: Item[]
 }
 
-const Draggable: Component<{ id: number }> = (props) => {
+const Draggable: Component<{ id: number; top: number; left: number }> = (
+    props
+) => {
     const draggable = createDraggable(props.id)
     return (
-        <div use:draggable class="draggable">
+        <div
+            use:draggable
+            class="draggable "
+            style={{
+                position: 'relative',
+                top: `${props.top}px`,
+                left: `${props.left}px`,
+            }}
+        >
             Draggable {props.id}
         </div>
     )
@@ -43,20 +60,26 @@ const Draggable: Component<{ id: number }> = (props) => {
 
 const Column: Component<{
     id: string
-    items: number[]
+    items: Item[]
 }> = (props) => {
     const droppable = createDroppable(props.id)
     return (
         <div
             use:droppable
-            class="droppable"
+            class="droppable relative"
             style={{ height: '30vh', width: '30vh', border: '1px solid blue' }}
         >
             Droppable {props.id}
             <For each={props.items}>
                 {(item) => {
                     console.log(item)
-                    return <Draggable id={item} />
+                    return (
+                        <Draggable
+                            id={item.id}
+                            top={item.top}
+                            left={item.left}
+                        />
+                    )
                 }}
             </For>
         </div>
@@ -65,16 +88,25 @@ const Column: Component<{
 
 export const MultiContainer: Component = () => {
     let count = 3
+    let top = 35
+    let transform = { x: 0, y: 0 }
     const [columns, setColumns] = createStore<{ num: number; cols: Column[] }>({
         num: 2,
         cols: [
-            { id: 'A', name: 'A', list: [0, 1] },
-            { id: 'B', name: 'B', list: [2] },
+            {
+                id: 'A',
+                name: 'A',
+                list: [
+                    { id: 0, top: 10, left: 0 },
+                    { id: 1, top: 30, left: 0 },
+                ],
+            },
+            { id: 'B', name: 'B', list: [{ id: 2, top: 10, left: 0 }] },
         ],
     })
     const findContainerIndex = (id: number): number | -1 => {
         for (const [index, column] of columns.cols.entries()) {
-            if (column.list.includes(id)) {
+            if (column.list.map((e) => e.id).includes(id)) {
                 return index
             }
         }
@@ -89,6 +121,12 @@ export const MultiContainer: Component = () => {
         }
         return -1
     }
+    const dragMove: DragEventHandler = ({ overlay }) => {
+        if (overlay) {
+            transform = { ...overlay.transform }
+            console.log(transform)
+        }
+    }
     const dragEnd: DragEventHandler = ({ draggable, droppable }) => {
         if (droppable) {
             const startContainerIndex = findContainerIndex(
@@ -97,15 +135,38 @@ export const MultiContainer: Component = () => {
             const stopContainerIndex = convertContainerIDtoIndex(
                 droppable.id as string
             )
-            batch(() => {
-                setColumns('cols', startContainerIndex, 'list', (items) =>
-                    items.filter((item) => item !== (draggable.id as number))
+            if (startContainerIndex === stopContainerIndex) {
+                console.log('same container')
+                setColumns(
+                    'cols',
+                    startContainerIndex,
+                    'list',
+                    (item) => item.id === (draggable.id as number),
+                    'top',
+                    (top) => top + transform.y
                 )
-                setColumns('cols', stopContainerIndex, 'list', (items) => [
-                    ...items,
-                    draggable.id as number,
-                ])
-            })
+            } else if (startContainerIndex !== stopContainerIndex) {
+                batch(() => {
+                    let start_top = 0
+                    setColumns('cols', startContainerIndex, 'list', (items) =>
+                        items.filter((item) => {
+                            if (item.id === (draggable.id as number)) {
+                                start_top = item.top
+                            }
+                            return item.id !== (draggable.id as number)
+                        })
+                    )
+                    setColumns('cols', stopContainerIndex, 'list', (items) => [
+                        ...items,
+                        {
+                            id: draggable.id as number,
+                            top: start_top + transform.y,
+                            left: 0,
+                        },
+                    ])
+                    top += 10
+                })
+            }
         } else {
         }
     }
@@ -124,8 +185,9 @@ export const MultiContainer: Component = () => {
                 onClick={(e) => {
                     setColumns('cols', 0, 'list', (items) => [
                         ...items,
-                        count++,
+                        { id: count++, top: top, left: 0 },
                     ])
+                    top += 10
                 }}
             >
                 Add Item
@@ -147,7 +209,7 @@ export const MultiContainer: Component = () => {
             >
                 Add Column
             </button>
-            <DragDropProvider onDragEnd={dragEnd}>
+            <DragDropProvider onDragEnd={dragEnd} onDragMove={dragMove}>
                 <DragDropSensors />
                 <div
                     style={{
@@ -170,6 +232,14 @@ export const MultiContainer: Component = () => {
                             )
                         }}
                     </For>
+                    <DragOverlay>
+                        <div
+                            class="draggable"
+                            style={{ 'text-align': 'center' }}
+                        >
+                            Drag Overlay
+                        </div>
+                    </DragOverlay>
                 </div>
             </DragDropProvider>
         </>
