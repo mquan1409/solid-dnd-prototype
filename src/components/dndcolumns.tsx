@@ -48,7 +48,7 @@ const Draggable: Component<{ id: number; top: number; left: number }> = (
             use:draggable
             class="draggable "
             style={{
-                position: 'relative',
+                position: 'absolute',
                 top: `${props.top}px`,
                 left: `${props.left}px`,
             }}
@@ -66,10 +66,17 @@ const Column: Component<{
     return (
         <div
             use:droppable
-            class="droppable relative"
-            style={{ height: '30vh', width: '30vh', border: '1px solid blue' }}
+            class="droppable"
+            style={{
+                height: '30vh',
+                width: '30vh',
+                border: '1px solid blue',
+                position: 'relative',
+            }}
         >
-            Droppable {props.id}
+            <div style={{ position: 'absolute', top: '0px', left: '0px' }}>
+                Droppable {props.id}
+            </div>
             <For each={props.items}>
                 {(item) => {
                     console.log(item)
@@ -97,11 +104,11 @@ export const MultiContainer: Component = () => {
                 id: 'A',
                 name: 'A',
                 list: [
-                    { id: 0, top: 10, left: 0 },
-                    { id: 1, top: 30, left: 0 },
+                    { id: 0, top: 20, left: 0 },
+                    { id: 1, top: 36, left: 0 },
                 ],
             },
-            { id: 'B', name: 'B', list: [{ id: 2, top: 10, left: 0 }] },
+            { id: 'B', name: 'B', list: [{ id: 2, top: 20, left: 0 }] },
         ],
     })
     const findContainerIndex = (id: number): number | -1 => {
