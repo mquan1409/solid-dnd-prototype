@@ -1,6 +1,6 @@
 import { Title } from 'solid-start'
 import Counter from '~/components/Counter'
-import { MultiContainer } from '~/components/dndcolumns'
+import { MultiContainer } from '~/components/MultiContainer'
 import { DragAndDrop } from '~/components/dragndrop'
 
 declare module 'solid-js' {

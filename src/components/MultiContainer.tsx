@@ -12,11 +12,21 @@ import {
     Component,
     createSignal,
     For,
-    JSXElement,
     onMount,
     batch,
+    Show,
+    Setter,
+    onCleanup,
+    useContext,
 } from 'solid-js'
+import type { JSX, JSXElement } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import { Portal } from 'solid-js/web'
+import { DialogueContextProvider, useDialogueContext } from '../contexts/DialogueContext'
+import { DataContextProvider, useDataContext } from '../contexts/DataContext'
+import { ItemDialogue } from '../dialogues/ItemDialogue'
+import type { Containers, Container, Item } from '../contexts/DataContext'
+import { on } from 'events'
 
 declare module 'solid-js' {
     namespace JSX {
@@ -25,18 +35,6 @@ declare module 'solid-js' {
             droppable: boolean
         }
     }
-}
-
-type Item = {
-    id: number
-    top: number
-    left: number
-}
-
-type Column = {
-    id: string
-    name: string
-    list: Item[]
 }
 
 const Draggable: Component<{ id: number; top: number; left: number }> = (
@@ -58,6 +56,25 @@ const Draggable: Component<{ id: number; top: number; left: number }> = (
     )
 }
 
+const createItem = (e: MouseEvent) => {
+    const createItemContext = useDialogueContext().createItemContext
+    if (e.target instanceof HTMLElement) {
+        const node = e.target as HTMLElement
+        const translate_x = Math.round(
+            e.clientX - node.getBoundingClientRect().left
+        )
+        const translate_y = Math.round(
+            e.clientY - node.getBoundingClientRect().top
+        )
+        console.log(translate_x, translate_y)
+        batch(() => {
+            createItemContext.x = translate_x
+            createItemContext.y = translate_y
+            createItemContext.set(true)
+        })
+    }
+}
+
 const Column: Component<{
     id: string
     items: Item[]
@@ -73,13 +90,16 @@ const Column: Component<{
                 border: '1px solid blue',
                 position: 'relative',
             }}
+            onClick={(e) => {
+                createItem(e)
+            }}
         >
             <div style={{ position: 'absolute', top: '0px', left: '0px' }}>
                 Droppable {props.id}
             </div>
             <For each={props.items}>
                 {(item) => {
-                    console.log(item)
+                    //console.log(item)
                     return (
                         <Draggable
                             id={item.id}
@@ -97,20 +117,7 @@ export const MultiContainer: Component = () => {
     let count = 3
     let top = 35
     let transform = { x: 0, y: 0 }
-    const [columns, setColumns] = createStore<{ num: number; cols: Column[] }>({
-        num: 2,
-        cols: [
-            {
-                id: 'A',
-                name: 'A',
-                list: [
-                    { id: 0, top: 20, left: 0 },
-                    { id: 1, top: 36, left: 0 },
-                ],
-            },
-            { id: 'B', name: 'B', list: [{ id: 2, top: 20, left: 0 }] },
-        ],
-    })
+    const { columns, setColumns } = useDataContext().containersContext
     const findContainerIndex = (id: number): number | -1 => {
         for (const [index, column] of columns.cols.entries()) {
             if (column.list.map((e) => e.id).includes(id)) {
@@ -131,7 +138,6 @@ export const MultiContainer: Component = () => {
     const dragMove: DragEventHandler = ({ overlay }) => {
         if (overlay) {
             transform = { ...overlay.transform }
-            console.log(transform)
         }
     }
     const dragEnd: DragEventHandler = ({ draggable, droppable }) => {
@@ -187,7 +193,8 @@ export const MultiContainer: Component = () => {
         return indexes
     }
     return (
-        <>
+        <DialogueContextProvider>
+        <DataContextProvider>
             <button
                 onClick={(e) => {
                     setColumns('cols', 0, 'list', (items) => [
@@ -249,6 +256,12 @@ export const MultiContainer: Component = () => {
                     </DragOverlay>
                 </div>
             </DragDropProvider>
-        </>
+            <Show when={useDialogueContext().createItemContext.get()}>
+                <Portal mount={document.body}>
+                    <ItemDialogue />
+                </Portal>
+            </Show>
+        </DataContextProvider>
+        </DialogueContextProvider>
     )
 }
