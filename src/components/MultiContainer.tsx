@@ -85,8 +85,8 @@ const Column: Component<{
             use:droppable
             class="droppable"
             style={{
-                height: '30vh',
-                width: '30vh',
+                height: '120vh',
+                width: '20vw',
                 border: '1px solid blue',
                 position: 'relative',
             }}
@@ -229,9 +229,10 @@ export const MultiContainer: Component = () => {
                     style={{
                         height: '100vh',
                         width: '100vw',
+                        "overflow-y": 'auto',
                         display: 'flex',
                         'justify-content': 'center',
-                        'align-items': 'center',
+                        'align-items': 'flex-start',
                         border: '1px dashed red',
                     }}
                 >
