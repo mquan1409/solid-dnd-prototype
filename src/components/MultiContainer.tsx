@@ -7,26 +7,15 @@ import {
     createDroppable,
     DragOverlay,
 } from '@thisbeyond/solid-dnd'
-import { pbkdf2 } from 'crypto'
-import {
-    Component,
-    createSignal,
-    For,
-    onMount,
-    batch,
-    Show,
-    Setter,
-    onCleanup,
-    useContext,
-} from 'solid-js'
-import type { JSX, JSXElement } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { Component, For, batch, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { DialogueContextProvider, useDialogueContext } from '../contexts/DialogueContext'
+import {
+    DialogueContextProvider,
+    useDialogueContext,
+} from '../contexts/DialogueContext'
 import { DataContextProvider, useDataContext } from '../contexts/DataContext'
 import { ItemDialogue } from '../dialogues/ItemDialogue'
-import type { Containers, Container, Item } from '../contexts/DataContext'
-import { on } from 'events'
+import type { Item } from '../contexts/DataContext'
 
 declare module 'solid-js' {
     namespace JSX {
@@ -194,75 +183,75 @@ export const MultiContainer: Component = () => {
     }
     return (
         <DialogueContextProvider>
-        <DataContextProvider>
-            <button
-                onClick={(e) => {
-                    setColumns('cols', 0, 'list', (items) => [
-                        ...items,
-                        { id: count++, top: top, left: 0 },
-                    ])
-                    top += 10
-                }}
-            >
-                Add Item
-            </button>
-            <button
-                onClick={(e) => {
-                    batch(() => {
-                        setColumns('num', (num) => num + 1)
-                        setColumns('cols', (cols) => [
-                            ...cols,
-                            {
-                                id: String.fromCharCode(64 + columns.num),
-                                name: String.fromCharCode(64 + columns.num),
-                                list: [],
-                            },
+            <DataContextProvider>
+                <button
+                    onClick={(e) => {
+                        setColumns('cols', 0, 'list', (items) => [
+                            ...items,
+                            { id: count++, top: top, left: 0 },
                         ])
-                    })
-                }}
-            >
-                Add Column
-            </button>
-            <DragDropProvider onDragEnd={dragEnd} onDragMove={dragMove}>
-                <DragDropSensors />
-                <div
-                    style={{
-                        height: '100vh',
-                        width: '100vw',
-                        "overflow-y": 'auto',
-                        display: 'flex',
-                        'justify-content': 'center',
-                        'align-items': 'flex-start',
-                        border: '1px dashed red',
+                        top += 10
                     }}
                 >
-                    <For each={containerIndexes()}>
-                        {(index) => {
-                            console.log('col' + index.toString())
-                            return (
-                                <Column
-                                    id={columns.cols[index].id}
-                                    items={columns.cols[index].list}
-                                />
-                            )
+                    Add Item
+                </button>
+                <button
+                    onClick={(e) => {
+                        batch(() => {
+                            setColumns('num', (num) => num + 1)
+                            setColumns('cols', (cols) => [
+                                ...cols,
+                                {
+                                    id: String.fromCharCode(64 + columns.num),
+                                    name: String.fromCharCode(64 + columns.num),
+                                    list: [],
+                                },
+                            ])
+                        })
+                    }}
+                >
+                    Add Column
+                </button>
+                <DragDropProvider onDragEnd={dragEnd} onDragMove={dragMove}>
+                    <DragDropSensors />
+                    <div
+                        style={{
+                            height: '100vh',
+                            width: '100vw',
+                            'overflow-y': 'auto',
+                            display: 'flex',
+                            'justify-content': 'center',
+                            'align-items': 'flex-start',
+                            border: '1px dashed red',
                         }}
-                    </For>
-                    <DragOverlay>
-                        <div
-                            class="draggable"
-                            style={{ 'text-align': 'center' }}
-                        >
-                            Drag Overlay
-                        </div>
-                    </DragOverlay>
-                </div>
-            </DragDropProvider>
-            <Show when={useDialogueContext().createItemContext.get()}>
-                <Portal mount={document.body}>
-                    <ItemDialogue />
-                </Portal>
-            </Show>
-        </DataContextProvider>
+                    >
+                        <For each={containerIndexes()}>
+                            {(index) => {
+                                console.log('col' + index.toString())
+                                return (
+                                    <Column
+                                        id={columns.cols[index].id}
+                                        items={columns.cols[index].list}
+                                    />
+                                )
+                            }}
+                        </For>
+                        <DragOverlay>
+                            <div
+                                class="draggable"
+                                style={{ 'text-align': 'center' }}
+                            >
+                                Drag Overlay
+                            </div>
+                        </DragOverlay>
+                    </div>
+                </DragDropProvider>
+                <Show when={useDialogueContext().createItemContext.get()}>
+                    <Portal mount={document.body}>
+                        <ItemDialogue />
+                    </Portal>
+                </Show>
+            </DataContextProvider>
         </DialogueContextProvider>
     )
 }

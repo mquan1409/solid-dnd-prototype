@@ -2,6 +2,7 @@ import { Title } from 'solid-start'
 import Counter from '~/components/Counter'
 import { MultiContainer } from '~/components/MultiContainer'
 import { DragAndDrop } from '~/components/dragndrop'
+import { SortableList } from '~/components/SortableContainer'
 
 declare module 'solid-js' {
     namespace JSX {
@@ -30,7 +31,7 @@ export default function Home() {
                 </a>{' '}
                 to learn how to build SolidStart apps.
             </p>
-            <MultiContainer />
+            <SortableList />
         </main>
     )
 }
